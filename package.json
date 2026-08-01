@@ -1,0 +1,53 @@
+{
+  "name": "@neefactory/skillsmithy",
+  "private": false,
+  "description": "Mint, migrate, validate, and package portable Agent Skill projects.",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neefactory/skillsmithy.git"
+  },
+  "homepage": "https://github.com/neefactory/skillsmithy#readme",
+  "bugs": {
+    "url": "https://github.com/neefactory/skillsmithy/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "bin": {
+    "skillsmithy": "./scripts/cli.mjs"
+  },
+  "files": [
+    "CLAUDE.md",
+    "README.md",
+    "LICENSE",
+    "scripts/",
+    "templates/.gitignore.destination",
+    "templates/AGENTS.destination.md",
+    "skill.config.json",
+    "skill.config.schema.json",
+    "skills/example-skill/"
+  ],
+  "engines": {
+    "node": ">=22.8.0"
+  },
+  "scripts": {
+    "mint": "node scripts/mint.mjs",
+    "import": "node scripts/import.mjs",
+    "add-skill": "node scripts/add-skill.mjs",
+    "build": "node scripts/build.mjs",
+    "validate": "node scripts/validate.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "check": "node scripts/check.mjs",
+    "test:unit": "node --test --test-isolation=none tests/*.test.mjs",
+    "test:package": "node tests/package-acceptance.mjs",
+    "test": "npm run test:unit && npm run test:package && npm run validate && npm run check"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
+  }
+}

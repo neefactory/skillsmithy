@@ -1,0 +1,15 @@
+{
+  "name": "example-skill",
+  "description": "Template plugin for bootstrapping one portable, publishable Agent Skill.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Your Name",
+    "url": "https://github.com/your-handle"
+  },
+  "homepage": "https://github.com/your-handle/your-repo",
+  "repository": "https://github.com/your-handle/your-repo",
+  "license": "MIT",
+  "keywords": [
+    "example-skill"
+  ]
+}

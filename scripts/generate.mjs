@@ -1,0 +1,256 @@
+import fs from "node:fs";
+import path from "node:path";
+import {
+  copyTree,
+  replaceGenerated,
+  validateGenerated,
+  validateProject,
+  writeJson,
+} from "./lib.mjs";
+
+export function buildProject(sourceRoot, destinationRoot) {
+  const validation = validateProject(sourceRoot);
+  if (validation.errors.length) {
+    throw new Error(validation.errors.join("\n"));
+  }
+
+  fs.mkdirSync(destinationRoot, { recursive: true });
+  const stageRoot = fs.mkdtempSync(
+    path.join(destinationRoot, ".skillsmithy-stage-"),
+  );
+
+  try {
+    generateProject(validation.project, stageRoot);
+    const generatedErrors = validateGenerated(
+      stageRoot,
+      validation.project.config,
+    );
+    if (generatedErrors.length) {
+      throw new Error(generatedErrors.join("\n"));
+    }
+    replaceGenerated(destinationRoot, stageRoot);
+  } finally {
+    fs.rmSync(stageRoot, { recursive: true, force: true });
+  }
+
+  return validation;
+}
+
+export function generateProject(project, outputRoot) {
+  const { config, skills } = project;
+  const repoUrl = `https://github.com/${config.repo}`;
+  const keywords = manifestKeywords(config, skills);
+
+  // The pristine template is a project source, not an installable product.
+  // Emitting discovery copies there would register example-skill with every
+  // agent opened on the checkout, so only destinations get them.
+  const withDiscoveryCopies = !config.template;
+
+  if (config.targets.claude) {
+    if (withDiscoveryCopies) {
+      copySkills(
+        skills,
+        path.join(outputRoot, ".claude", "skills"),
+        excludeFromClaudeDiscovery,
+      );
+    }
+
+    writeJson(path.join(outputRoot, ".claude-plugin", "plugin.json"), {
+      name: config.pluginName,
+      description: config.description,
+      version: config.version,
+      author: cleanOwner(config.owner),
+      homepage: repoUrl,
+      repository: repoUrl,
+      license: config.license,
+      keywords,
+    });
+
+    writeJson(path.join(outputRoot, ".claude-plugin", "marketplace.json"), {
+      name: config.marketplaceName,
+      owner: compact({
+        name: config.owner.name,
+        email: config.owner.email,
+      }),
+      description: config.marketplaceDescription,
+      plugins: [
+        {
+          name: config.pluginName,
+          source: "./",
+          description: config.description,
+        },
+      ],
+    });
+  }
+
+  if (config.targets.codex) {
+    if (withDiscoveryCopies) {
+      copySkills(skills, path.join(outputRoot, ".agents", "skills"));
+    }
+
+    writeJson(path.join(outputRoot, ".codex-plugin", "plugin.json"), {
+      name: config.pluginName,
+      version: config.version,
+      description: config.description,
+      author: cleanOwner(config.owner),
+      homepage: repoUrl,
+      repository: repoUrl,
+      license: config.license,
+      keywords,
+      skills: "./skills/",
+      interface: {
+        displayName: config.displayName,
+        shortDescription: config.shortDescription,
+        longDescription: config.description,
+        developerName: config.owner.name,
+        category: config.category,
+        websiteURL: repoUrl,
+        defaultPrompt: [config.defaultPrompt],
+      },
+    });
+
+    writeJson(path.join(outputRoot, ".agents", "plugins", "marketplace.json"), {
+      name: config.marketplaceName,
+      interface: {
+        displayName: config.marketplaceDisplayName,
+      },
+      plugins: [
+        {
+          name: config.pluginName,
+          source: {
+            source: "local",
+            path: "./",
+          },
+          policy: {
+            installation: "AVAILABLE",
+            authentication: "ON_INSTALL",
+          },
+          category: config.category,
+        },
+      ],
+    });
+  }
+
+  if (
+    !config.template &&
+    config.targets.openclaw &&
+    ["manual", "push"].includes(config.clawhub?.githubActions)
+  ) {
+    writeClawHubWorkflow(outputRoot, config);
+  }
+
+  // OpenClaw, ClawHub, and Hermes consume skills/<name>/ directly. No
+  // transformed copy is generated, preserving portable YAML and vendor
+  // metadata such as metadata.openclaw and metadata.hermes.
+}
+
+const CLAWHUB_WORKFLOW_REF = "openclaw/clawhub/.github/workflows/skill-publish.yml@main";
+
+function writeClawHubWorkflow(outputRoot, config) {
+  const mode = config.clawhub.githubActions;
+  const publishBranch = config.clawhub.publishBranch || "main";
+  const ownerLine = config.clawhub.owner
+    ? `      owner: ${yamlString(config.clawhub.owner)}\n`
+    : "";
+  const pushTrigger =
+    mode === "push"
+      ? `  push:\n` +
+        `    branches:\n` +
+        `      - ${yamlString(publishBranch)}\n` +
+        `    paths:\n` +
+        `      - ${yamlString(`${config.sourceDir}/**`)}\n`
+      : "";
+  const publishCondition =
+    mode === "push"
+      ? "github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
+      : "github.event_name == 'workflow_dispatch'";
+  const workflow =
+    `# Generated by \`npm run build\` from skill.config.json. Do not edit by hand.\n` +
+    `name: Publish skills to ClawHub\n\n` +
+    `on:\n` +
+    `  pull_request:\n` +
+    `    paths:\n` +
+    `      - ${yamlString(`${config.sourceDir}/**`)}\n` +
+    pushTrigger +
+    `  workflow_dispatch:\n\n` +
+    `jobs:\n` +
+    `  dry-run:\n` +
+    `    if: github.event_name == 'pull_request'\n` +
+    `    uses: ${CLAWHUB_WORKFLOW_REF}\n` +
+    `    with:\n` +
+    `      root: ${yamlString(config.sourceDir)}\n` +
+    ownerLine +
+    `      dry_run: true\n\n` +
+    `  publish:\n` +
+    `    if: ${publishCondition}\n` +
+    `    uses: ${CLAWHUB_WORKFLOW_REF}\n` +
+    `    with:\n` +
+    `      root: ${yamlString(config.sourceDir)}\n` +
+    ownerLine +
+    `      dry_run: false\n` +
+    `    secrets:\n` +
+    `      clawhub_token: \${{ secrets.CLAWHUB_TOKEN }}\n`;
+  const target = path.join(
+    outputRoot,
+    ".github",
+    "workflows",
+    "clawhub-publish.yml",
+  );
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, workflow);
+}
+
+function yamlString(value) {
+  return JSON.stringify(value);
+}
+
+// Canonical skill names come first and are always present. With `keywords`
+// unset the manifests match what this generator produced before the field
+// existed, so no destination goes stale, and an author-supplied list adds
+// discovery terms rather than replacing the names installers search for.
+function manifestKeywords(config, skills) {
+  return [
+    ...new Set([
+      ...skills.map((skill) => skill.directoryName),
+      ...(config.keywords ?? []),
+    ]),
+  ];
+}
+
+function copySkills(skills, destination, exclude) {
+  fs.mkdirSync(destination, { recursive: true });
+  for (const skill of skills) {
+    copyTree(
+      skill.directory,
+      path.join(destination, skill.directoryName),
+      exclude,
+    );
+  }
+}
+
+// agents/openai.yaml carries Codex product UI metadata that Claude never
+// reads, so a copy of it under .claude/skills/ reads as a packaging mistake to
+// anyone who opens the project. Discovery copies are local conveniences that
+// register the skill in the project you author it in; installers take
+// skills/<name>/ from the repository root, so omitting the file here changes
+// nothing that ships. Exclude the exact path rather than agents/, so a skill
+// that keeps real content beside it still receives that content.
+const CLAUDE_DISCOVERY_EXCLUSIONS = new Set(["agents/openai.yaml"]);
+
+function excludeFromClaudeDiscovery(relativePath) {
+  return CLAUDE_DISCOVERY_EXCLUSIONS.has(relativePath);
+}
+
+function cleanOwner(owner) {
+  return compact({
+    name: owner.name,
+    email: owner.email,
+    url: owner.url,
+  });
+}
+
+function compact(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item != null && item !== ""),
+  );
+}

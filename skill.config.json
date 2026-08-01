@@ -1,0 +1,33 @@
+{
+  "$schema": "./skill.config.schema.json",
+  "$comment": "Keep this checkout pristine. Run `npm run mint -- <skill-name> --out-dir <path>` for a new skill or `npm run import -- <source> --out-dir <path>` for an existing skill. The license, owner, repo, and ClawHub settings below describe Skill Smithy itself; mint and import reset publisher identity, default license to MIT-0, and disable ClawHub Actions in the destination.",
+  "template": true,
+  "mode": "single",
+  "pluginName": "example-skill",
+  "displayName": "Example Skill",
+  "shortDescription": "Template for one polished agent skill",
+  "description": "Template plugin for bootstrapping one portable, publishable Agent Skill.",
+  "defaultPrompt": "Use $example-skill to demonstrate the skill template workflow.",
+  "category": "Productivity",
+  "marketplaceName": "my-skills",
+  "marketplaceDisplayName": "My Skills",
+  "marketplaceDescription": "Portable Agent Skills published from one canonical source.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "owner": {
+    "name": "Your Name",
+    "url": "https://github.com/your-handle"
+  },
+  "repo": "your-handle/your-repo",
+  "sourceDir": "skills",
+  "clawhub": {
+    "githubActions": "off",
+    "publishBranch": "main"
+  },
+  "targets": {
+    "claude": true,
+    "codex": true,
+    "openclaw": true,
+    "hermes": true
+  }
+}

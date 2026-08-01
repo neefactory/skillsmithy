@@ -1,0 +1,27 @@
+{
+  "name": "example-skill",
+  "version": "0.1.0",
+  "description": "Template plugin for bootstrapping one portable, publishable Agent Skill.",
+  "author": {
+    "name": "Your Name",
+    "url": "https://github.com/your-handle"
+  },
+  "homepage": "https://github.com/your-handle/your-repo",
+  "repository": "https://github.com/your-handle/your-repo",
+  "license": "MIT",
+  "keywords": [
+    "example-skill"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Example Skill",
+    "shortDescription": "Template for one polished agent skill",
+    "longDescription": "Template plugin for bootstrapping one portable, publishable Agent Skill.",
+    "developerName": "Your Name",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/your-handle/your-repo",
+    "defaultPrompt": [
+      "Use $example-skill to demonstrate the skill template workflow."
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+*.log
+.DS_Store
+.claude/settings.local.json
+
+# Interrupted `build`, `check`, or `add-skill --from` runs can leave these
+# behind. `mint` never runs in a destination, so its prefix is not listed.
+.skillsmithy-stage-*
+.skillsmithy-transaction-*
+.skillsmithy-import-*
+
+# Generated discovery copies; `npm run build` recreates them.
+.claude/skills/
+.agents/skills/

@@ -1,0 +1,14 @@
+{
+  "name": "my-skills",
+  "owner": {
+    "name": "Your Name"
+  },
+  "description": "Portable Agent Skills published from one canonical source.",
+  "plugins": [
+    {
+      "name": "example-skill",
+      "source": "./",
+      "description": "Template plugin for bootstrapping one portable, publishable Agent Skill."
+    }
+  ]
+}

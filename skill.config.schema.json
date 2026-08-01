@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./skill.config.schema.json",
+  "title": "Skill Smithy configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "template",
+    "mode",
+    "pluginName",
+    "displayName",
+    "shortDescription",
+    "description",
+    "defaultPrompt",
+    "category",
+    "marketplaceName",
+    "marketplaceDisplayName",
+    "marketplaceDescription",
+    "version",
+    "license",
+    "owner",
+    "repo",
+    "sourceDir",
+    "targets"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "template": { "type": "boolean" },
+    "mode": { "enum": ["single", "bundle"] },
+    "pluginName": { "$ref": "#/$defs/kebabName" },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "shortDescription": { "type": "string", "minLength": 25, "maxLength": 64 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "defaultPrompt": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "category": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "keywords": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/keyword" },
+      "description": "Optional discovery terms for the generated plugin manifests. Canonical skill names are always emitted, so list only terms the names do not already cover."
+    },
+    "marketplaceName": { "$ref": "#/$defs/kebabName" },
+    "marketplaceDisplayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "marketplaceDescription": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "license": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 254,
+          "description": "Optional and omitted by default. Adding it publishes the address in every generated plugin and marketplace manifest."
+        },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[^/\\s]+/[^/\\s]+$"
+    },
+    "sourceDir": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._/-]+$"
+    },
+    "clawhub": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["githubActions"],
+      "properties": {
+        "githubActions": {
+          "enum": ["off", "manual", "push"],
+          "description": "Generate no ClawHub workflow, a manually dispatched publisher, or a publisher that also runs on pushes to publishBranch."
+        },
+        "publishBranch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[^\\s]+$",
+          "description": "Branch used for automatic push publishing and as the recommended manual dispatch ref."
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+          "maxLength": 64,
+          "description": "Optional ClawHub publisher handle. Omit it to publish as the user authenticated by CLAWHUB_TOKEN."
+        }
+      }
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claude", "codex", "openclaw", "hermes"],
+      "properties": {
+        "claude": { "type": "boolean" },
+        "codex": { "type": "boolean" },
+        "openclaw": { "type": "boolean" },
+        "hermes": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "keyword": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 40,
+      "pattern": "^[a-z0-9]+(?:[ -][a-z0-9]+)*$"
+    }
+  }
+}

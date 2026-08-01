@@ -1,0 +1,8 @@
+node_modules/
+*.log
+.DS_Store
+.claude/settings.local.json
+.skillsmithy-stage-*
+.skillsmithy-transaction-*
+.skillsmithy-import-*
+.skillsmithy-mint-*

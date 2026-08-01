@@ -1,0 +1,4 @@
+interface:
+  display_name: "Example Skill"
+  short_description: "Template for one polished agent skill"
+  default_prompt: "Use $example-skill to demonstrate the skill template workflow."

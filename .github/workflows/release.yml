@@ -1,0 +1,62 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Gate the release on the same suite CI runs.
+      - run: npm ci
+      - run: npm test
+      - run: node tests/destination-acceptance.mjs
+      - name: Verify release version
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          test "v${package_version}" = "${GITHUB_REF_NAME}"
+
+      # `git archive` emits exactly the tracked files at this tag, under a
+      # clean prefix, so anyone can rebuild the asset and compare hashes:
+      #   git archive --format=zip --prefix=skillsmithy/ -o check.zip <tag>
+      - name: Build the release archive
+        run: |
+          git archive --format=zip --prefix=skillsmithy/ \
+            -o skillsmithy.zip "${GITHUB_REF_NAME}"
+          sha256sum skillsmithy.zip > skillsmithy.zip.sha256
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: skillsmithy.zip
+
+      # The package is the tooling dependency written into every new
+      # destination. Configure NPM_TOKEN for the @neefactory scope before
+      # cutting a release.
+      - name: Publish Skill Smithy package
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            skillsmithy.zip skillsmithy.zip.sha256
