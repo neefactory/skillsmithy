@@ -1,0 +1,9 @@
+# `npm run check` byte-compares the committed generated manifests against a
+# fresh build, and the generator always writes LF. Windows checkouts default to
+# core.autocrlf=true (GitHub's windows-latest runner sets it), which rewrites
+# those files to CRLF on checkout and reports drift no rebuild can clear: the
+# build writes LF, and the next checkout converts it back.
+#
+# Pinning the working tree to LF on every platform keeps the byte comparison
+# meaningful and keeps canonical skill bytes identical across platforms.
+* text=auto eol=lf
