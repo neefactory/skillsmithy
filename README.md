@@ -637,7 +637,8 @@ text, so matching the files to the field is your call.
 
 ## Validation and compatibility
 
-The test suite runs on Windows and Ubuntu with Node 22.8 or newer. CI validates
+The test suite runs on Windows and Ubuntu against both Node 22 and Node 24, the
+maintenance and active LTS lines that `engines` spans. CI validates
 the pristine template and also runs an npm-package boundary harness. That
 harness creates a local `npm pack` tarball from the current, possibly unpushed
 working tree; installs it; mints a real destination through its `bin` command;
