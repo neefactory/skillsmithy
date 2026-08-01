@@ -43,7 +43,7 @@
     "doctor": "node scripts/doctor.mjs",
     "migrate": "node scripts/migrate.mjs",
     "check": "node scripts/check.mjs",
-    "test:unit": "node --test --test-isolation=none tests/*.test.mjs",
+    "test:unit": "node --test --experimental-test-isolation=none tests/*.test.mjs",
     "test:package": "node tests/package-acceptance.mjs",
     "test": "npm run test:unit && npm run test:package && npm run validate && npm run check"
   },
