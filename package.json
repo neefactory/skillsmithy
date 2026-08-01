@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neefactory/skillsmithy.git"
+    "url": "git+https://github.com/neefactory/skillsmithy.git"
   },
   "homepage": "https://github.com/neefactory/skillsmithy#readme",
   "bugs": {
