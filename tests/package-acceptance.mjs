@@ -83,9 +83,13 @@ try {
     "SKILL.md",
   );
   const canonicalBefore = fs.readFileSync(canonicalPath);
+  // `--save-dev` matches how the migration step below reinstalls yaml. Landing
+  // it in `dependencies` first makes npm move it on the second install and warn
+  // about reconciling the two, which reads like a defect in the destination.
   runNpm(
     [
       "install",
+      "--save-dev",
       "--no-audit",
       "--no-fund",
       "--ignore-scripts",

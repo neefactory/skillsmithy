@@ -2,7 +2,7 @@
   "name": "@neefactory/skillsmithy",
   "private": false,
   "description": "Mint, migrate, validate, and package portable Agent Skill projects.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -18,7 +18,7 @@
     "provenance": true
   },
   "bin": {
-    "skillsmithy": "./scripts/cli.mjs"
+    "skillsmithy": "scripts/cli.mjs"
   },
   "files": [
     "CLAUDE.md",
