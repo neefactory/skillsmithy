@@ -16,7 +16,10 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      # v6 dropped the deprecated `always-auth` key from the .npmrc it writes,
+      # and v7 stopped exporting an empty NODE_AUTH_TOKEN that OIDC publishing
+      # has no use for.
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -41,22 +44,46 @@ jobs:
             -o skillsmithy.zip "${GITHUB_REF_NAME}"
           sha256sum skillsmithy.zip > skillsmithy.zip.sha256
 
-      - uses: actions/attest-build-provenance@v2
+      # v2's nested predicate action still declares the Node 20 runtime the
+      # runners now force onto 24. v4 drops that step and runs node24 natively.
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: skillsmithy.zip
 
       # The package is the tooling dependency written into every new
-      # destination. Configure NPM_TOKEN for the @neefactory scope before
-      # cutting a release.
+      # destination. It publishes through npm trusted publishing (OIDC), so the
+      # `id-token: write` permission above is the entire credential: no token to
+      # rotate, and no 2FA prompt for CI to fail on. npmjs.com must name
+      # neefactory/skillsmithy and this workflow's file name under the package's
+      # trusted publisher, so renaming this file breaks publishing.
+      #
+      # Publishing is irreversible while the steps after it are not, so a job
+      # that fails late must be re-runnable without tripping over the half that
+      # already succeeded. A version already on the registry is treated as this
+      # release having got that far, not as an error.
       - name: Publish Skill Smithy package
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          if npm view "${name}@${version}" version >/dev/null 2>&1; then
+            echo "${name}@${version} is already published; skipping."
+          else
+            npm publish --access public --provenance
+          fi
 
+      # `gh release create` fails outright when the tag already has a release,
+      # whether a previous run or the GitHub UI created it. Notes are generated
+      # only when this run creates the release, so hand-written notes on an
+      # existing one survive.
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --generate-notes \
-            skillsmithy.zip skillsmithy.zip.sha256
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" \
+              skillsmithy.zip skillsmithy.zip.sha256 --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --generate-notes \
+              skillsmithy.zip skillsmithy.zip.sha256
+          fi

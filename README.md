@@ -53,10 +53,11 @@ gh attestation verify skillsmithy.zip --repo neefactory/skillsmithy
 
 That checks a signed provenance attestation proving which workflow, repository,
 and commit produced the file. If you would rather rebuild it and compare hashes,
-clone the repository and run the same command CI runs:
+clone the repository and run the same command CI runs, naming the tag whose
+archive you downloaded:
 
 ```bash
-git archive --format=zip --prefix=skillsmithy/ -o check.zip v1.0.0
+git archive --format=zip --prefix=skillsmithy/ -o check.zip <tag>
 ```
 
 `git archive` output is stable in practice but not formally guaranteed across
@@ -73,7 +74,7 @@ The npm package exposes the same entry point. After a release has been
 published, it can mint without a separate checkout:
 
 ```bash
-npm exec --package=@neefactory/skillsmithy@1.0.0 -- \
+npm exec --package=@neefactory/skillsmithy@latest -- \
   skillsmithy mint my-new-skill --out-dir ../my-new-skill
 ```
 
@@ -667,9 +668,11 @@ Releases are cut by `.github/workflows/release.yml` on a `v*` tag. The tag must
 equal `v` plus `package.json`'s version. The workflow runs the same suite,
 publishes the public `@neefactory/skillsmithy` package with npm provenance,
 builds the archive with `git archive`, and attaches a SHA-256 sum alongside a
-signed provenance attestation. Configure the repository's `NPM_TOKEN` secret
-with publish access to the `@neefactory` scope before cutting a release. Nothing
-about the release is assembled by hand.
+signed provenance attestation. Publishing uses npm trusted publishing (OIDC),
+so there is no `NPM_TOKEN` secret to configure: npmjs.com names
+`neefactory/skillsmithy` and the `release.yml` workflow as the package's trusted
+publisher, and the job holds the `id-token: write` permission. Nothing about the
+release is assembled by hand.
 
 Git itself is optional for local or CLI-only projects. `npm run doctor` reports
 a missing repository or remote as information when Actions are off, and as a
